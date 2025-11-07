@@ -85,8 +85,12 @@ export function WeatherWidget() {
   if (!visible) return null;
 
   return (
-    <Draggable bounds="parent" handle=".handle">
-      <div className="fixed bottom-4 right-4 z-50">
+    <Draggable
+      handle=".handle"
+      defaultPosition={{x: 0, y: 0}}
+      bounds=".env-dashboard-container"
+    >
+      <div className="absolute bottom-4 right-4 z-50">
         <Card className="w-[220px] bg-black/80 text-white shadow-lg">
           <div className="handle cursor-move p-4">
             <div className="flex items-center justify-between">

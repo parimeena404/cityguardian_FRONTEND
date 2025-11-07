@@ -73,7 +73,7 @@ export default function EnvironmentalDashboard() {
   const maxTemp = Math.max(...chartData.map(d => d.temp))
 
   return (
-    <div className="min-h-screen bg-black text-green-400 font-mono relative overflow-hidden">
+    <div className="min-h-screen bg-black text-green-400 font-mono relative overflow-hidden env-dashboard-container">
       {/* Background Grid */}
       <div className="fixed inset-0 opacity-10">
         <div className="w-full h-full" style={{
