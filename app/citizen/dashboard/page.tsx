@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import NavigationHeader from "@/components/navigation-header"
+import LiveLocationMap from "@/components/live-location-map"
 import { 
   Users, 
   MessageSquare, 
@@ -33,6 +34,13 @@ export default function CitizenDashboard() {
   const [loadingLocation, setLoadingLocation] = useState(false)
   const [location, setLocation] = useState("")
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
+  const [showLocationMap, setShowLocationMap] = useState(false)
+
+  // Handle location selection from map
+  const handleLocationSelect = (locationData: { lat: number; lng: number; address: string }) => {
+    setLocation(locationData.address)
+    setCoordinates({ lat: locationData.lat, lng: locationData.lng })
+  }
 
   // Get current location
   const getCurrentLocation = () => {
@@ -183,7 +191,10 @@ export default function CitizenDashboard() {
           </Button>
           <Button 
             variant={activeTab === "complain" ? "default" : "ghost"}
-            onClick={() => setActiveTab("complain")}
+            onClick={() => {
+              setActiveTab("complain")
+              setShowLocationMap(true)
+            }}
             className={activeTab === "complain" ? "bg-green-400 text-black" : "text-green-400 hover:bg-green-400/10"}
           >
             <AlertTriangle className="w-4 h-4 mr-2" />
@@ -214,7 +225,10 @@ export default function CitizenDashboard() {
             </Button>
             <Button 
               variant={activeTab === "complain" ? "default" : "ghost"}
-              onClick={() => setActiveTab("complain")}
+              onClick={() => {
+                setActiveTab("complain")
+                setShowLocationMap(true)
+              }}
               size="sm"
               className={activeTab === "complain" ? "bg-green-400 text-black" : "text-green-400"}
             >
@@ -549,6 +563,11 @@ export default function CitizenDashboard() {
                 </Button>
               </div>
             </Card>
+
+            {/* Show Live Location Map when in Complain tab */}
+            {showLocationMap && (
+              <LiveLocationMap onLocationSelect={handleLocationSelect} />
+            )}
           </div>
         )}
       </main>
