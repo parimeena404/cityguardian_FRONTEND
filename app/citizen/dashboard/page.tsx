@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import dynamic from "next/dynamic"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import NavigationHeader from "@/components/navigation-header"
-import LiveLocationMap from "@/components/live-location-map"
 import { 
   Users, 
   MessageSquare, 
@@ -25,8 +25,25 @@ import {
   Clock,
   CheckCircle2,
   Bell,
-  Menu
+  Menu,
+  Loader2
 } from "lucide-react"
+
+// Dynamically import LiveLocationMap to avoid SSR issues with Leaflet
+const LiveLocationMap = dynamic(
+  () => import("@/components/live-location-map"),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="fixed z-50 bg-black border-2 border-green-400/50 rounded-lg shadow-2xl shadow-green-500/30 p-4" style={{ left: '20px', top: '100px' }}>
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-green-400" />
+          <span className="text-sm text-gray-400 font-mono">Loading map...</span>
+        </div>
+      </div>
+    )
+  }
+)
 
 export default function CitizenDashboard() {
   const [activeTab, setActiveTab] = useState("feed")
