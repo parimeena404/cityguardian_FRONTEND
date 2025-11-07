@@ -126,7 +126,7 @@ export default function FloatingChatbot() {
   // Twilio call integration - This will need backend API endpoint
   const initiateTwilioCall = async () => {
     // Ask user for their phone number
-    const userPhone = prompt("Please enter your phone number (with country code, e.g., +1234567890):")
+    const userPhone = prompt("Enter your phone number with country code (e.g., +11234567890 for USA, +919876543210 for India):")
     
     if (!userPhone) {
       return // User cancelled
