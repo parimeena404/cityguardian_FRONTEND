@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, AlertTriangle, Eye, LogOut, Target, Trophy, Zap } from "lucide-react"
-import { WeatherWidget } from "./weather-widget"
+import { SimpleWeatherWidget } from "./simple-weather-widget"
 
 interface SensorData {
   activeSensors: number
@@ -376,7 +376,7 @@ export default function EnvironmentalDashboard() {
         </div>
 
         {/* Weather Widget */}
-        <WeatherWidget />
+        <SimpleWeatherWidget />
 
         {/* Built with indicator */}
         <div className="fixed bottom-4 right-4 flex items-center gap-2 text-xs text-gray-500">
