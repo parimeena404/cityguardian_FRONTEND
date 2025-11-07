@@ -73,8 +73,9 @@ export default function EnvironmentalDashboard() {
   const maxTemp = Math.max(...chartData.map(d => d.temp))
 
   return (
-    <div className="min-h-screen bg-black text-green-400 font-mono relative overflow-hidden env-dashboard-container">
-      {/* Background Grid */}
+    <div className="min-h-screen bg-black text-green-400 font-mono relative">
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Background Grid */}
       <div className="fixed inset-0 opacity-10">
         <div className="w-full h-full" style={{
           backgroundImage: `
@@ -146,7 +147,7 @@ export default function EnvironmentalDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="ml-64 p-6 relative min-h-screen">
+      <div className="ml-64 p-6 relative min-h-screen" id="weather-widget-container">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-6xl font-black text-green-400 mb-2 tracking-wider neon-glow">

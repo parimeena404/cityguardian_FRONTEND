@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { Providers } from "./providers"
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -71,6 +71,17 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
 }
 
+'use client';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -79,10 +90,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        <Providers>
+        <QueryClientProvider client={queryClient}>
           {children}
           <Analytics />
-        </Providers>
+        </QueryClientProvider>
       </body>
     </html>
   )

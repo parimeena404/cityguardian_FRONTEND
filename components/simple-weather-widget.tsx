@@ -64,18 +64,40 @@ export function SimpleWeatherWidget() {
   };
 
   useEffect(() => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          fetchWeatherData(pos.coords.latitude, pos.coords.longitude);
-        },
-        (err) => {
+    let isMounted = true;
+    
+    const initializeWeather = async () => {
+      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          
+          if (isMounted) {
+            fetchWeatherData(
+              (position as GeolocationPosition).coords.latitude,
+              (position as GeolocationPosition).coords.longitude
+            );
+          }
+        } catch (err) {
           console.error('Location error:', err);
-          // Default to London coordinates if geolocation fails
+          if (isMounted) {
+            // Default to London coordinates if geolocation fails
+            fetchWeatherData(51.5074, -0.1278);
+          }
+        }
+      } else {
+        if (isMounted) {
           fetchWeatherData(51.5074, -0.1278);
         }
-      );
-    }
+      }
+    };
+
+    initializeWeather();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Refresh weather data every 5 minutes

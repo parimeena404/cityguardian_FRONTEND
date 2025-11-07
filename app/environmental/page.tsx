@@ -1,5 +1,15 @@
-import EnvironmentalDashboard from "@/components/environmental-dashboard"
+import dynamic from 'next/dynamic'
+import { ErrorBoundary } from '@/components/error-boundary'
+
+const EnvironmentalDashboard = dynamic(
+  () => import('@/components/environmental-dashboard'),
+  { ssr: false }
+)
 
 export default function EnvironmentalPage() {
-  return <EnvironmentalDashboard />
+  return (
+    <ErrorBoundary>
+      <EnvironmentalDashboard />
+    </ErrorBoundary>
+  )
 }

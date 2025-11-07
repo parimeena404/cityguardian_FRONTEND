@@ -5,7 +5,6 @@ import Draggable from 'react-draggable';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 
 interface WeatherData {
   current: {
