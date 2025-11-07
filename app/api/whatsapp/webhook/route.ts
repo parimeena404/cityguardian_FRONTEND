@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Twilio WhatsApp Bot Webhook
+// Store WhatsApp conversations (use database in production)
+const whatsappConversations = new Map<string, Array<{ 
+  message: string
+  timestamp: Date
+  type: 'sent' | 'received'
+  mediaUrl?: string
+  mediaType?: string
+}>>()
+
+// Twilio WhatsApp Bot Webhook - Synced with Website Chatbot
 // This endpoint receives messages from WhatsApp via Twilio
 
 export async function POST(request: NextRequest) {
@@ -11,12 +20,36 @@ export async function POST(request: NextRequest) {
     const body = formData.get('Body') as string
     const numMedia = parseInt(formData.get('NumMedia') as string || '0')
     
+    // Get media attachments
+    const mediaUrl = numMedia > 0 ? formData.get('MediaUrl0') as string : undefined
+    const mediaType = numMedia > 0 ? formData.get('MediaContentType0') as string : undefined
+    
     console.log('WhatsApp message received from:', from)
     console.log('Message:', body)
-    console.log('Media files:', numMedia)
+    console.log('Media files:', numMedia, mediaUrl, mediaType)
 
-    // Get bot response based on user message
-    const botResponse = getBotResponse(body?.toLowerCase() || '')
+    // Store incoming message in conversation history
+    if (!whatsappConversations.has(from)) {
+      whatsappConversations.set(from, [])
+    }
+    const conversation = whatsappConversations.get(from)!
+    conversation.push({
+      message: body || `[Media: ${mediaType}]`,
+      timestamp: new Date(),
+      type: 'received',
+      mediaUrl,
+      mediaType
+    })
+
+    // Get bot response based on user message (synced with website chatbot)
+    const botResponse = getBotResponse(body?.toLowerCase() || '', mediaUrl, mediaType)
+
+    // Store bot response
+    conversation.push({
+      message: botResponse,
+      timestamp: new Date(),
+      type: 'sent'
+    })
 
     // Create TwiML response
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -47,42 +80,90 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Bot response logic - Same as chatbot
-function getBotResponse(message: string): string {
+/**
+ * GET /api/whatsapp/webhook?phone=xxx
+ * Get WhatsApp conversation history (for website chatbot sync)
+ */
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const phone = searchParams.get('phone')
+
+  if (!phone) {
+    return NextResponse.json({ error: 'Phone number required' }, { status: 400 })
+  }
+
+  const formattedPhone = phone.startsWith('whatsapp:') 
+    ? phone 
+    : `whatsapp:+${phone.replace(/\D/g, '')}`
+  
+  const conversation = whatsappConversations.get(formattedPhone) || []
+
+  return NextResponse.json({
+    success: true,
+    messages: conversation,
+    phone: formattedPhone
+  })
+}
+
+// Bot response logic - Synced with website chatbot (/api/chat)
+function getBotResponse(message: string, mediaUrl?: string, mediaType?: string): string {
+  // Handle media uploads
+  if (mediaUrl) {
+    if (mediaType?.includes('image')) {
+      return "✅ *Photo Received!*\n\nThank you for sending the image! Our team will review it shortly.\n\n🌐 Also chat on website:\ncityguardian.vercel.app\n\n📱 Track your report here on WhatsApp! I'll send updates."
+    }
+    if (mediaType?.includes('video')) {
+      return "✅ *Video Received!*\n\nWe're analyzing the footage. Our team will investigate within 24 hours.\n\n🌐 Track progress at:\ncityguardian.vercel.app\n\n📱 I'll send updates here!"
+    }
+    return "✅ *File Received!*\n\nOur team will review it soon.\n\n🌐 Visit cityguardian.vercel.app for more options!"
+  }
+
   if (!message) {
-    return "Hi! 👋 I'm CityGuardian Bot. How can I help you today?"
+    return "Hi! 👋 I'm CityGuardian Bot.\n\n🤖 Same AI on:\n📱 WhatsApp (+916261072872)\n💬 Website chat (cityguardian.vercel.app)\n\nHow can I help?"
   }
 
+  // Greetings
   if (message.includes("hello") || message.includes("hi") || message.includes("hey")) {
-    return "Hello! Welcome to CityGuardian. How can I assist you today?\n\nYou can ask me about:\n• Environmental monitoring\n• Reporting issues\n• Contact support\n• Learn more about our services"
+    return "👋 *Welcome to CityGuardian!*\n\nI'm your AI assistant available 24/7!\n\n✅ Report issues (send photos/videos)\n✅ Check air quality data\n✅ Track complaints\n✅ Contact support\n\n💬 Also chat on:\ncityguardian.vercel.app\n\nType 'help' for menu!"
   }
   
-  if (message.includes("environmental") || message.includes("sensor") || message.includes("air quality")) {
-    return "You can check real-time environmental data on our website: https://cityguardian.vercel.app/environmental\n\nWould you like me to help you with anything specific?"
+  // Environmental queries
+  if (message.includes("environmental") || message.includes("sensor") || message.includes("air quality") || message.includes("aqi") || message.includes("pollution")) {
+    return "🌍 *Environmental Monitoring*\n\nReal-time data:\n• Air Quality Index (AQI)\n• PM2.5 & PM10 levels\n• Temperature & Humidity\n• Noise pollution\n• Live weather widget\n\n📊 View at:\ncityguardian.vercel.app/environmental\n\n💬 Ask me anything!"
   }
   
-  if (message.includes("report") || message.includes("issue") || message.includes("problem")) {
-    return "To report an issue:\n\n1. Visit our citizen dashboard\n2. Take photos/videos of the issue\n3. Send them here on WhatsApp\n4. Our team will respond within 24 hours\n\nYou can also send media directly here and describe the problem!"
+  // Report issues
+  if (message.includes("report") || message.includes("issue") || message.includes("problem") || message.includes("complaint")) {
+    return "📋 *Report an Issue*\n\n*Via WhatsApp (here):*\n1. Take photo/video 📸\n2. Send it to this chat\n3. Add location details 📍\n\n*Via Website:*\ncityguardian.vercel.app/citizen/reports\n\n⏱️ Response: 24 hours\n📱 Updates sent here!"
   }
   
-  if (message.includes("contact") || message.includes("support") || message.includes("help")) {
-    return "Contact CityGuardian Support:\n\n📱 WhatsApp: You're already here!\n📧 Email: support@cityguardian.com\n🌐 Website: https://cityguardian.vercel.app\n📞 Phone: Request a callback anytime\n\nHow can I help you today?"
+  // Contact/Support
+  if (message.includes("contact") || message.includes("support")) {
+    return "📞 *Contact CityGuardian*\n\n� *WhatsApp:* You're here! (+916261072872)\n🌐 *Website:* cityguardian.vercel.app\n� *Live Chat:* Chatbot on website\n☎️ *Voice:* 'Call Support' button\n\n✅ Same AI everywhere!\n✅ Synced conversations!\n\nHow can I assist?"
   }
   
-  if (message.includes("photo") || message.includes("image") || message.includes("video")) {
-    return "Yes! You can send photos and videos directly here on WhatsApp.\n\nJust tap the attachment icon (📎) and:\n• Select photos from your gallery\n• Take a new photo\n• Record a video\n\nI'll receive them and our team will review within 24 hours!"
+  // Help menu
+  if (message.includes("help") || message.includes("menu") || message.includes("options")) {
+    return "🆘 *Quick Menu*\n\n1️⃣ *'report'* - Report issues\n2️⃣ *'environmental'* - Check AQI\n3️⃣ *'track'* - View status\n4️⃣ *'contact'* - Get support\n5️⃣ *Send media* - Upload photos/videos\n\n🌐 *Website:*\ncityguardian.vercel.app\n\n✨ Same AI, multiple channels!"
   }
   
-  if (message.includes("thank")) {
-    return "You're welcome! 😊\n\nFeel free to reach out anytime. We're here to help 24/7!"
+  // Photo/Video instructions
+  if (message.includes("photo") || message.includes("image") || message.includes("video") || message.includes("upload")) {
+    return "📸 *Send Photos & Videos*\n\nYou can send media:\n\n*On WhatsApp:*\n• Tap attachment �\n• Select photo/video\n• Send directly!\n\n*On Website:*\n• Click chatbot icon\n• Click paperclip 📎\n• Upload & send\n\n✅ Max 10MB\n✅ Instant processing!"
   }
 
-  if (message.includes("status") || message.includes("complaint")) {
-    return "To check your complaint status, please share your complaint ID.\n\nDon't have one? Just describe your issue and send any relevant photos/videos. We'll create a new ticket for you!"
+  // Track status
+  if (message.includes("status") || message.includes("track")) {
+    return "🔍 *Track Your Report*\n\n*Method 1:* Send reference # here\n*Method 2:* Visit cityguardian.vercel.app/citizen/dashboard\n\n💡 Updates sent to WhatsApp!\n\n📱 Save +916261072872 for notifications!"
+  }
+  
+  // Thank you
+  if (message.includes("thank")) {
+    return "😊 You're welcome!\n\nAvailable 24/7 on:\n\n📱 WhatsApp (here)\n💬 Website chat\n☎️ Voice call\n\nAll synced together!"
   }
 
   // Default response
-  return "I'm here to help! 🤖\n\nI can assist you with:\n✅ Environmental monitoring data\n✅ Reporting issues (with photos/videos)\n✅ Contact support team\n✅ General information\n\nWhat would you like to know?"
+  return "🤖 *CityGuardian AI*\n\nI can help with:\n\n📸 Report issues (photos/videos)\n📊 Environmental data (AQI, weather)\n📋 Track reports\n💬 Support\n\n🌐 Also on:\ncityguardian.vercel.app\n\nType 'help' or ask anything!"
 }
 
 // Escape XML special characters
