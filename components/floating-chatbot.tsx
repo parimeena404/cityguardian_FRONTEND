@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { MessageCircle, X, Send, Phone, Mail, MessageSquare } from "lucide-react"
+import { MessageCircle, X, Send, Phone, MessageSquare, Paperclip, Image as ImageIcon, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -10,6 +10,8 @@ interface Message {
   text: string
   sender: "user" | "bot"
   timestamp: Date
+  fileUrl?: string
+  fileType?: "image" | "video" | "document"
 }
 
 export default function FloatingChatbot() {
@@ -24,7 +26,9 @@ export default function FloatingChatbot() {
   ])
   const [inputValue, setInputValue] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -58,30 +62,51 @@ export default function FloatingChatbot() {
   }
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return
+    if (!inputValue.trim() && !selectedFile) return
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: inputValue || (selectedFile ? `Sent ${selectedFile.type.startsWith('image') ? 'an image' : 'a video'}` : ""),
       sender: "user",
-      timestamp: new Date()
+      timestamp: new Date(),
+      fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : undefined,
+      fileType: selectedFile?.type.startsWith('image') ? 'image' : selectedFile?.type.startsWith('video') ? 'video' : undefined
     }
     setMessages(prev => [...prev, userMessage])
+    const messageText = inputValue
     setInputValue("")
+    setSelectedFile(null)
     setIsTyping(true)
 
     // Simulate bot typing delay
     setTimeout(() => {
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: getBotResponse(inputValue),
+        text: getBotResponse(messageText),
         sender: "bot",
         timestamp: new Date()
       }
       setMessages(prev => [...prev, botResponse])
       setIsTyping(false)
     }, 1000)
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File size must be less than 10MB")
+        return
+      }
+      // Check file type
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        alert("Only images and videos are supported")
+        return
+      }
+      setSelectedFile(file)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -143,11 +168,11 @@ export default function FloatingChatbot() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-green-500 hover:bg-green-600 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 animate-pulse"
+          className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-green-400 hover:bg-green-500 rounded-full shadow-lg shadow-green-500/50 flex items-center justify-center transition-all duration-300 hover:scale-110 animate-pulse"
           aria-label="Open chat"
         >
-          <MessageCircle className="w-8 h-8 text-white" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+          <MessageCircle className="w-8 h-8 text-black" />
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full flex items-center justify-center text-black text-xs font-bold border-2 border-black animate-pulse">
             !
           </span>
         </button>
@@ -155,21 +180,27 @@ export default function FloatingChatbot() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+        <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-black border-2 border-green-400/50 rounded-2xl shadow-2xl shadow-green-500/30 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                <MessageCircle className="w-6 h-6 text-green-500" />
+          <div className="bg-black border-b-2 border-green-400/50 text-green-400 p-4 flex items-center justify-between relative">
+            {/* Scanline effect */}
+            <div className="absolute inset-0 pointer-events-none opacity-5">
+              <div className="w-full h-full" style={{
+                backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,153,0.1) 2px, rgba(0,255,153,0.1) 4px)',
+              }} />
+            </div>
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 bg-green-400 rounded-full flex items-center justify-center animate-pulse">
+                <MessageCircle className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">CityGuardian Support</h3>
-                <p className="text-xs text-green-100">Online • Ready to help</p>
+                <h3 className="font-bold text-lg font-mono">CITYGUARDIAN</h3>
+                <p className="text-xs text-green-300/70 font-mono">ONLINE • OPERATIVE MODE</p>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="hover:bg-green-700 rounded-full p-1 transition-colors"
+              className="hover:bg-green-400/10 rounded-full p-1 transition-colors relative z-10"
               aria-label="Close chat"
             >
               <X className="w-5 h-5" />
@@ -177,21 +208,47 @@ export default function FloatingChatbot() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 bg-black space-y-4 relative">
+            {/* Grid background */}
+            <div className="fixed inset-0 opacity-5 pointer-events-none">
+              <div className="w-full h-full" style={{
+                backgroundImage: `
+                  linear-gradient(rgba(0,255,153,0.1) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(0,255,153,0.1) 1px, transparent 1px)
+                `,
+                backgroundSize: '20px 20px'
+              }} />
+            </div>
+            
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} relative z-10`}
               >
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                  className={`max-w-[75%] rounded-lg px-4 py-2 font-mono text-sm ${
                     message.sender === "user"
-                      ? "bg-green-500 text-white rounded-br-none"
-                      : "bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-200"
+                      ? "bg-green-400 text-black border border-green-300"
+                      : "bg-gray-900 text-green-400 border border-green-500/30"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-line">{message.text}</p>
-                  <span className={`text-xs ${message.sender === "user" ? "text-green-100" : "text-gray-400"} mt-1 block`}>
+                  {/* Display file preview if exists */}
+                  {message.fileUrl && message.fileType === 'image' && (
+                    <img 
+                      src={message.fileUrl} 
+                      alt="Uploaded" 
+                      className="max-w-full rounded mb-2 border border-green-400/30"
+                    />
+                  )}
+                  {message.fileUrl && message.fileType === 'video' && (
+                    <video 
+                      src={message.fileUrl} 
+                      controls 
+                      className="max-w-full rounded mb-2 border border-green-400/30"
+                    />
+                  )}
+                  <p className="whitespace-pre-line">{message.text}</p>
+                  <span className={`text-xs ${message.sender === "user" ? "text-black/60" : "text-green-400/60"} mt-1 block`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -199,12 +256,12 @@ export default function FloatingChatbot() {
             ))}
 
             {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-white rounded-2xl rounded-bl-none px-4 py-3 shadow-sm border border-gray-200">
+              <div className="flex justify-start relative z-10">
+                <div className="bg-gray-900 border border-green-500/30 rounded-lg px-4 py-3">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               </div>
@@ -213,41 +270,68 @@ export default function FloatingChatbot() {
           </div>
 
           {/* Quick Actions */}
-          <div className="border-t border-gray-200 bg-white p-3">
-            <p className="text-xs text-gray-600 mb-2 font-medium">Quick Contact:</p>
+          <div className="border-t-2 border-green-400/50 bg-black p-3">
+            <p className="text-xs text-green-400/70 mb-2 font-mono font-bold">QUICK_CONTACT:</p>
             <div className="flex gap-2">
               <button
                 onClick={openWhatsApp}
-                className="flex-1 bg-[#25D366] hover:bg-[#20BA5A] text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 bg-[#25D366] hover:bg-[#20BA5A] text-white px-3 py-2 rounded-lg text-sm font-mono font-bold flex items-center justify-center gap-2 transition-all border border-[#20BA5A]"
               >
                 <MessageSquare className="w-4 h-4" />
-                WhatsApp
+                WHATSAPP
               </button>
               <button
                 onClick={initiateTwilioCall}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 bg-green-400 hover:bg-green-500 text-black px-3 py-2 rounded-lg text-sm font-mono font-bold flex items-center justify-center gap-2 transition-all border border-green-300"
               >
                 <Phone className="w-4 h-4" />
-                Call Me
+                CALL_ME
               </button>
             </div>
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-gray-200 bg-white p-4">
+          <div className="border-t-2 border-green-400/50 bg-black p-4">
+            {/* File preview */}
+            {selectedFile && (
+              <div className="mb-2 p-2 bg-gray-900 border border-green-400/30 rounded flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-400 text-sm font-mono">
+                  {selectedFile.type.startsWith('image/') ? <ImageIcon className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+                  <span className="truncate max-w-[200px]">{selectedFile.name}</span>
+                </div>
+                <button onClick={() => setSelectedFile(null)} className="text-red-400 hover:text-red-300">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            
             <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-gray-900 hover:bg-gray-800 border border-green-400/30 text-green-400 p-2 rounded-lg transition-colors"
+                aria-label="Attach file"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
               <Input
                 type="text"
-                placeholder="Type your message..."
+                placeholder="TYPE_MESSAGE..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="flex-1 border-gray-300 focus:border-green-500 focus:ring-green-500 text-gray-900 placeholder:text-gray-500 bg-white"
+                className="flex-1 bg-gray-900 border-green-400/30 focus:border-green-400 focus:ring-green-400 text-green-400 placeholder:text-green-400/40 font-mono"
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim()}
-                className="bg-green-500 hover:bg-green-600 text-white px-4"
+                disabled={!inputValue.trim() && !selectedFile}
+                className="bg-green-400 hover:bg-green-500 text-black px-4 font-mono font-bold border border-green-300"
               >
                 <Send className="w-4 h-4" />
               </Button>
