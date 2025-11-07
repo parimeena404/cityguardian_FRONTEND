@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, AlertTriangle, Eye, LogOut, Target, Trophy, Zap } from "lucide-react"
+import { WeatherWidget } from "./weather-widget"
 
 interface SensorData {
   activeSensors: number
@@ -145,7 +146,7 @@ export default function EnvironmentalDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="ml-64 p-6">
+      <div className="ml-64 p-6 relative min-h-screen">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-6xl font-black text-green-400 mb-2 tracking-wider neon-glow">
@@ -373,6 +374,9 @@ export default function EnvironmentalDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Weather Widget */}
+        <WeatherWidget />
 
         {/* Built with indicator */}
         <div className="fixed bottom-4 right-4 flex items-center gap-2 text-xs text-gray-500">
