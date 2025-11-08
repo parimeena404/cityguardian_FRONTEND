@@ -2,7 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import FloatingChatbot from "@/components/floating-chatbot"
+import BotpressChatbot from "@/components/botpress-chatbot"
+import { AuthProvider } from "@/contexts/auth-context"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -79,9 +80,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        {children}
-        <FloatingChatbot />
-        <Analytics />
+        <AuthProvider>
+          {children}
+          <BotpressChatbot />
+          <Analytics />
+        </AuthProvider>
       </body>
     </html>
   )
